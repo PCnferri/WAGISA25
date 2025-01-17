@@ -10,7 +10,54 @@ To address this challenge, the Tax Parcel Finder tool was developed for ArcGIS P
 
 # Tax Parcel Finder Tool’s Python Code
 ## Part 1: set the environment and check variables 
-
+    import arcpy, os, time, getpass
+    from datetime import datetime
+    
+    # Define paths and variables
+    gdb_path = arcpy.env.workspace  # User's default GDB
+    excel_file = arcpy.GetParameterAsText(0)  # Input Excel file from user
+    scratch_geojson = arcpy.GetParameterAsText(1)  # Path for GeoJSON output
+    parcels_layer = "Parcels"  # Name of the parcels layer
+    field_to_join = "TaxParcelNumber"  # Field to join on
+    
+    # Check that ATR's Parcels is active on map
+    stopProcess = False
+    
+    if not arcpy.Exists(parcels_layer):
+            arcpy.AddError(' The ATR > PARCELS feature class is missing '.format(parcels_layer))
+            stopProcess = True
+        
+    if stopProcess:
+            arcpy.AddError(' Missing required feature class: {} '.format(parcels_layer))
+            arcpy.AddError('!!! Rerun the tool after adding Parcels to the map. ') 
+            sys.exit('Missing required feature class or classes.  Stopping process.')
+            
+    # Function to check field schema
+    def check_field_schema(layer, field):
+        fields = [f.name for f in arcpy.ListFields(layer)]
+        if field not in fields:
+            arcpy.AddError(f"Field '{field_to_join}' not found in layer '{excel_file}'. Rename the parcel field in the Excel to include TaxParcelNumber.")
+            return False
+        return True
+    
+    # Function for user's initials
+    
+    def getUserInitials(currentEditor):
+        editor = currentEditor.upper().replace('AD\\','') #Active Directory
+        
+        # Note: Any additional editor exceptions need to be in upper case.
+        if editor == 'JCHO':
+            editorInitials = 'KC'
+        else: 
+            editorInitials = editor[:2]  # The string function to get the first two chars of users' login.
+        return editorInitials
+    
+    currentEditor = getpass.getuser()  # User's login name
+    userInitials = getUserInitials(currentEditor)
+    
+    print('currentEditor: {}'.format(currentEditor))
+    print('userInitials: {}'.format(userInitials))
+      
 The code was initially written as a Python script and then integrated into an ArcGIS Pro toolbox as a script, allowing users to interact with variables directly through the tool's interface. Users can easily edit, open and run the tool by right-clicking on its script icon.
 
 The script starts by importing important libraries: arcpy for GIS tasks, os for working with file paths, and getpass for user authentication. Next, it defines the paths for input and output data. In this case, the input variable is an Excel file (0), the output variable is for a GeoJSON file (1), and the user’s default geodatabase is used for a feature class output. These paths are set as variables in the tool interface. To reduce long-term data storage costs, the GeoJSON default output location will save to folder that deletes data after seven days. However, since the tool is interactive, the user can redirect the location of the GeoJSON to their preferred location.
@@ -20,6 +67,50 @@ The script then checks if the required "Parcels" layer is available in the map. 
 Lastly, the script uses the client directory database to generate the user’s initials for the output’s naming convention. Since the GeoJSON output is saved to a shared location, initials help each user know which GeoJSON is theirs. 
 
 ## Part 2: join tax parcels to layer and export features 
+    # Start processing data
+    try:
+        # Step 1: Remove previous join
+        arcpy.RemoveJoin_management(parcels_layer)
+    
+        # Step 2: Check schema for the tax parcel number field
+        arcpy.AddMessage('Checking schema for TaxParcelNumber field...')
+        if not check_field_schema(excel_file, field_to_join):
+            raise Exception("Schema check failed. Aborting process. Correct the Excel to include 'TaxParcelNumber'.")
+    
+        # Step 3: Add join to PARCELS layer
+        arcpy.AddMessage('Joining table to Parcels...')
+        arcpy.AddJoin_management(parcels_layer, field_to_join, excel_file, field_to_join)  # Perform join operation
+    
+        # Step 4: Select by attribute on PARCELS for the joined field
+        arcpy.AddMessage('Selecting joined Parcels...')
+        joined_field = f"{os.path.splitext(os.path.basename(excel_file))[0]}.{field_to_join}"  # Build joined field name
+        expression = f"{joined_field} IS NOT NULL"  # Selection criteria
+        arcpy.SelectLayerByAttribute_management(parcels_layer, "NEW_SELECTION", expression)  # Execute selection
+    
+        # Step 5: Export selected PARCELS to user's default GDB
+        arcpy.AddMessage('Exporting selected Parcels to GDB...')
+        output_name = f"Parcels_{userInitials}_{datetime.now().strftime('%m%d%y_%H%M')}"  # Generate output name with user initials and timestamp
+        output_gdb = os.path.join(gdb_path, output_name)  # Construct output path
+        arcpy.CopyFeatures_management(parcels_layer, output_gdb)  # Copy selected features to GDB
+    
+        # Step 6: Export selected PARCELS to GeoJSON
+        arcpy.AddMessage('Converting features to GeoJSON...')
+        geojson_path = os.path.join(scratch_geojson, f"Parcels_{userInitials}_{datetime.now().strftime('%m%d%y_%H%M')}.geojson")  # GeoJSON output path
+        
+        arcpy.FeaturesToJSON_conversion(
+            output_gdb,
+            geojson_path,
+            format_json="NOT_FORMATTED",
+            include_z_values="NO_Z_VALUES",
+            include_m_values="NO_M_VALUES",
+            geoJSON="GEOJSON",
+            outputToWGS84="KEEP_INPUT_SR",
+            use_field_alias="USE_FIELD_NAME"
+            )  # Convert features to GeoJSON format
+    
+        # Step 7: Clear selection from PARCELS
+        arcpy.SelectLayerByAttribute_management(parcels_layer, "CLEAR_SELECTION")  # Clear any previous selections
+
 Once the schema is validated, the script joins the Excel data with the Parcel layer using the "TaxParcelNumber" field, creating a combined dataset. It then selects the tax parcels from the Pierce County layer where the joined  "TaxParcelNumber" is not null. This selection is exported as a feature class to the user’s default geodatabase, allowing user to edit the data and add notes during pre-site assessments.
 
 Since Pierce County ArcGIS Online users are not authorized to publish data, appraisers also need a GeoJSON output to upload the assigned tax parcels to ArcGIS Online. This GeoJSON layer will be referenced using Fieldmaps on iPads during physical assessments. 
@@ -27,11 +118,62 @@ Since Pierce County ArcGIS Online users are not authorized to publish data, appr
 After generating the outputs, the selection is cleared in preparation for a new one.
 
 ## Part 3: add identified tax parcels to map, symbolize, and label
+       # Step 8: Add new parcels layer to the map
+          arcpy.AddMessage('Adding service area parcels to map...')
+          aprx = arcpy.mp.ArcGISProject('CURRENT')  # Get the current ArcGIS project
+          current_map = aprx.activeMap  # Reference the active map
+          current_map.addDataFromPath(output_gdb)  # Add the new layer to the map
+      
+          # Step 9: Apply bright pink symbology to the new layer    
+          newparcels = os.path.basename(output_gdb)  # Get the name of the new parcels layer
+          aprx = arcpy.mp.ArcGISProject('CURRENT')  # Get the current project
+          activemap = aprx.activeMap  # Get the active map
+          lyr = activemap.listLayers(newparcels)[0]  # Reference the new layer
+          sym = lyr.symbology  # Get the current symbology
+          
+          # Symbology characteristics 
+          sym.renderer.symbol.applySymbolFromGallery("Extent Transparent Wide Gray")  # Apply a predefined symbol
+          sym.renderer.symbol.color = {'RGB' : [0, 0, 0, 0]}  # Set symbol color
+          sym.renderer.symbol.outlineColor = {'RGB' : [255, 19, 240, 100]}  # Set outline color to bright pink
+          sym.renderer.symbol.size = 2  # Set symbol size
+          lyr.symbology = sym  # Update layer with new symbology
+          arcpy.AddMessage('Symbology applied to new parcels layer.')
+      
+          # Adding labels
+          lyr = activemap.listLayers('Parcels_*')[0]
+          sym = lyr.symbology
+          lblClass = lyr.listLabelClasses('Class 1')[0]
+          lblClass.expression = '$feature.GDB_Parcel_TaxParcelNumber'
+          lyr.showLabels = True
+              
+          # Step 10: Zoom to the extent of the new layer
+          arcpy.AddMessage('Zooming to the new parcels layer extent...')
+          expression = "GDB_Parcel_TaxParcelNumber IS NOT NULL"  # Selection criteria
+          arcpy.SelectLayerByAttribute_management(newparcels, "NEW_SELECTION", expression)  # Execute selection
+      
+          #Current error = Map object has no attribute 'zoomToSelectedFeatures'
+          df = aprx.activeView
+          df.zoomToAllLayers(True)
+          time.sleep(1)
+          arcpy.SelectLayerByAttribute_management(newparcels, "CLEAR_SELECTION")  # Clear previous selection
+
 After the script creates two outputs, it then adds the new feature class as a layer into the active map. During this segment of the process, customization is automated by applying a bright pink outline and labels for easy visualization and identification. To make this process more user-friendly, the script makes another selection of the tax parcels to then zoom to the layer’s extent. To make the bright pink outline more visible, a final clear selection is performed to remove the blue highlight indicator, see final output image below. 
 
 It was essential to use a vibrant color for the symbology to clearly distinguish tax parcel lines in the darker areas of the orthophotography basemap, such as waterways. Many appraisers will further enhance their maps with additional symbology and customized labeling.
 
 ## Part 4: inform user of where to find their data
+        # Step 11: Notify Users of the output locations
+            arcpy.AddMessage('---------------------------------')
+            arcpy.AddMessage('Finished!')
+            arcpy.AddMessage(f'Parcels added to map are located at: {output_gdb}')
+            arcpy.AddMessage(f'Parcels geoJSON file located at: {geojson_path}')
+            arcpy.AddMessage('---------------------------------')
+        
+        except Exception as e:
+            arcpy.AddError(str(e))  # Log any errors that occur during processing
+        finally:
+            arcpy.AddMessage('Process completed.')  # Notify completion of the process
+
 The final step of the process involves notifying the user of the names of their feature class and GeoJSON files, as well as providing the location to access them. The script then concludes the Try statement, signaling the end of the process. Overall, the task takes approximately 30 seconds to complete, which is a significant time savings compared to performing the steps manually. 
 
 This streamlined process has proven to be highly effective in overcoming a major obstacle during the Pierce County Assessor-Treasurer appraiser’s transition from CountyView Web to ArcGIS Pro. Since the initial training, a follow-up session was held to reinforce the previously covered workflows and address any additional questions. As a result, the commercial and residential appraisers are now confidently using ArcGIS Pro to review assigned tax parcels in their service areas and carry out critical tasks before conducting physical site assessments.
