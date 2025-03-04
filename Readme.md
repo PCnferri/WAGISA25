@@ -28,7 +28,7 @@ Lastly, the script uses the client directory database to generate the user’s i
     parcels_layer = "Parcels"  # Name of the parcels layer
     field_to_join = "TaxParcelNumber"  # Field to join on
     
-    # Check that ATR's Parcels is active on map
+    # Check that Parcels is active on map
     stopProcess = False
     
     if not arcpy.Exists(parcels_layer):
@@ -71,7 +71,7 @@ Once the schema is validated, the script joins the Excel data with the Parcel la
 
 Since Pierce County ArcGIS Online users are not authorized to publish data, appraisers also need a GeoJSON output to upload the assigned tax parcels to ArcGIS Online. This GeoJSON layer will be referenced using Fieldmaps on iPads during physical assessments. After generating the outputs, the selection is cleared in preparation for a new one.
 
-    # Start processing data
+    # Creating new outputs
     try:
         # Step 1: Remove previous join
         arcpy.RemoveJoin_management(parcels_layer)
@@ -81,23 +81,23 @@ Since Pierce County ArcGIS Online users are not authorized to publish data, appr
         if not check_field_schema(excel_file, field_to_join):
             raise Exception("Schema check failed. Aborting process. Correct the Excel to include 'TaxParcelNumber'.")
     
-        # Step 3: Add join to PARCELS layer
+        # Step 3: Add join to Parcels layer
         arcpy.AddMessage('Joining table to Parcels...')
         arcpy.AddJoin_management(parcels_layer, field_to_join, excel_file, field_to_join)  # Perform join operation
     
-        # Step 4: Select by attribute on PARCELS for the joined field
+        # Step 4: Select by attribute on Parcels for the joined field
         arcpy.AddMessage('Selecting joined Parcels...')
         joined_field = f"{os.path.splitext(os.path.basename(excel_file))[0]}.{field_to_join}"  # Build joined field name
         expression = f"{joined_field} IS NOT NULL"  # Selection criteria
         arcpy.SelectLayerByAttribute_management(parcels_layer, "NEW_SELECTION", expression)  # Execute selection
     
-        # Step 5: Export selected PARCELS to user's default GDB
+        # Step 5: Export selected Parcels to user's default GDB
         arcpy.AddMessage('Exporting selected Parcels to GDB...')
         output_name = f"Parcels_{userInitials}_{datetime.now().strftime('%m%d%y_%H%M')}"  # Generate output name with user initials and timestamp
         output_gdb = os.path.join(gdb_path, output_name)  # Construct output path
         arcpy.CopyFeatures_management(parcels_layer, output_gdb)  # Copy selected features to GDB
     
-        # Step 6: Export selected PARCELS to GeoJSON
+        # Step 6: Export selected Parcels to GeoJSON
         arcpy.AddMessage('Converting features to GeoJSON...')
         geojson_path = os.path.join(scratch_geojson, f"Parcels_{userInitials}_{datetime.now().strftime('%m%d%y_%H%M')}.geojson")  # GeoJSON output path
         
@@ -110,9 +110,9 @@ Since Pierce County ArcGIS Online users are not authorized to publish data, appr
             geoJSON="GEOJSON",
             outputToWGS84="KEEP_INPUT_SR",
             use_field_alias="USE_FIELD_NAME"
-            )  # Convert features to GeoJSON format
+            ) 
     
-        # Step 7: Clear selection from PARCELS
+        # Step 7: Clear selection from Parcels
         arcpy.SelectLayerByAttribute_management(parcels_layer, "CLEAR_SELECTION")  # Clear any previous selections
 
 ## Part 3: add identified tax parcels to map, symbolize, and label
@@ -152,11 +152,9 @@ It was essential to use a vibrant color for the symbology to clearly distinguish
           arcpy.AddMessage('Zooming to the new parcels layer extent...')
           expression = "GDB_Parcel_TaxParcelNumber IS NOT NULL"  # Selection criteria
           arcpy.SelectLayerByAttribute_management(newparcels, "NEW_SELECTION", expression)  # Execute selection
-      
-          #Current error = Map object has no attribute 'zoomToSelectedFeatures'
           df = aprx.activeView
-          df.zoomToAllLayers(True)
-          time.sleep(1)
+          df.zoomToAllLayers(True) # Zoom to selection
+          time.sleep(2) # Pause for effect
           arcpy.SelectLayerByAttribute_management(newparcels, "CLEAR_SELECTION")  # Clear previous selection
 
 ## Part 4: inform user of where to find their data
