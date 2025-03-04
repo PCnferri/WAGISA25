@@ -49,7 +49,6 @@ def check_field_schema(layer, field):
     return True
 
 # Function for user's initials
-
 def getUserInitials(currentEditor):
     editor = currentEditor.upper().replace('AD\\','') #Active Directory
     
@@ -66,7 +65,7 @@ userInitials = getUserInitials(currentEditor)
 print('currentEditor: {}'.format(currentEditor))
 print('userInitials: {}'.format(userInitials))
 
-# Start processing data
+# Creating new outputs
 try:
     # Step 1: Remove previous join
     arcpy.RemoveJoin_management(parcels_layer)
@@ -76,23 +75,23 @@ try:
     if not check_field_schema(excel_file, field_to_join):
         raise Exception("Schema check failed. Aborting process. Correct the Excel to include 'TaxParcelNumber'.")
 
-    # Step 3: Add join to PARCELS layer
+    # Step 3: Add join to parcels layer
     arcpy.AddMessage('Joining table to Parcels...')
     arcpy.AddJoin_management(parcels_layer, field_to_join, excel_file, field_to_join)  # Perform join operation
 
-    # Step 4: Select by attribute on PARCELS for the joined field
+    # Step 4: Select by attribute on parcels for the joined field
     arcpy.AddMessage('Selecting joined Parcels...')
     joined_field = f"{os.path.splitext(os.path.basename(excel_file))[0]}.{field_to_join}"  # Build joined field name
     expression = f"{joined_field} IS NOT NULL"  # Selection criteria
     arcpy.SelectLayerByAttribute_management(parcels_layer, "NEW_SELECTION", expression)  # Execute selection
 
-    # Step 5: Export selected PARCELS to user's default GDB
+    # Step 5: Export selected parcels to user's default GDB
     arcpy.AddMessage('Exporting selected Parcels to GDB...')
     output_name = f"Parcels_{userInitials}_{datetime.now().strftime('%m%d%y_%H%M')}"  # Generate output name with user initials and timestamp
     output_gdb = os.path.join(gdb_path, output_name)  # Construct output path
     arcpy.CopyFeatures_management(parcels_layer, output_gdb)  # Copy selected features to GDB
 
-    # Step 6: Export selected PARCELS to GeoJSON
+    # Step 6: Export selected parcels to GeoJSON
     arcpy.AddMessage('Converting features to GeoJSON...')
     geojson_path = os.path.join(scratch_geojson, f"Parcels_{userInitials}_{datetime.now().strftime('%m%d%y_%H%M')}.geojson")  # GeoJSON output path
     
@@ -105,9 +104,9 @@ try:
         geoJSON="GEOJSON",
         outputToWGS84="KEEP_INPUT_SR",
         use_field_alias="USE_FIELD_NAME"
-        )  # Convert features to GeoJSON format
+        )  
 
-    # Step 7: Clear selection from PARCELS
+    # Step 7: Clear selection from parcels
     arcpy.SelectLayerByAttribute_management(parcels_layer, "CLEAR_SELECTION")  # Clear any previous selections
 
     # Step 8: Add new parcels layer to the map
@@ -142,11 +141,9 @@ try:
     arcpy.AddMessage('Zooming to the new parcels layer extent...')
     expression = "GDB_Parcel_TaxParcelNumber IS NOT NULL"  # Selection criteria
     arcpy.SelectLayerByAttribute_management(newparcels, "NEW_SELECTION", expression)  # Execute selection
-
-    #Current error = Map object has no attribute 'zoomToSelectedFeatures'
     df = aprx.activeView
-    df.zoomToAllLayers(True)
-    time.sleep(1)
+    df.zoomToAllLayers(True) # Zoom to selection
+    time.sleep(1) # Pause for effect
     arcpy.SelectLayerByAttribute_management(newparcels, "CLEAR_SELECTION")  # Clear previous selection
     
     # Step 11: Notify Users of the output locations
