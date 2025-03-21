@@ -159,7 +159,7 @@ Users receive a notification of the feature class andGeoJSON file name and locat
             arcpy.AddMessage('Process completed.')  # Notify completion of the process
 
 # Conclusion
-This tool helped the Pierce County appraisers transition smoothly to ArcGISPro, improving parcel review and pre-site assessment time. Python continues to enhance GIS workflows, saving time and simplifying complex tasks.
+This tool helped the Pierce County appraisers transition smoothly to ArcGISPro, enhancing parcel review and pre-site assessments. Python continues to enhance GIS workflows, saving time and simplifying complex tasks.
 
 Whether your teams are working with large datasets or performing routine tasks, Python can be a powerful tool to navigate complex geospatial work, establish efficiencies, and help users feel empowered while using ArcGIS Pro. 
 
