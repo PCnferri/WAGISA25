@@ -6,7 +6,7 @@ CodePierce County Spatial Services provides employees access to six enterprise m
 
 # Tax Parcel Finder Tool’s Python Code
 ## Part 1: Set Environment & Check Variables 
-The script, integrated into an ArcGIS Pro toolbox, allows users to modify settings via an interface. It imports essential libraries (arcpy, os, getpass)and sets input/output paths. Default GeoJSONoutput is saved to a temporary folder but can be redirected. The script verifies the required “Parcels” layer and ensures the TaxParcelNumber field in Excel matches the layer. Errors are flagged if inconsistencies exist. User initials and date are appended to file names for easy identification.
+The script, integrated into an ArcGIS Pro toolbox, allows users to modify settings via an interface. It imports essential libraries (arcpy, os, getpass) and sets input/output paths. Default GeoJSONoutput is saved to a temporary folder but can be redirected. The script verifies the required “Parcels” layer and ensures the TaxParcelNumber field in Excel matches the layer. Errors are flagged if inconsistencies exist. User initials and date are appended to file names for easy identification.
 
     import arcpy, os, time, getpass
     from datetime import datetime
