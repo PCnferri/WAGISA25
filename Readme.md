@@ -2,7 +2,7 @@
 Credits: Natalie Ferri and Cort Daniel
 
 # Introduction
-Pierce County Spatial Services provides employees access to six enterprise mapping applications. Most use CountyView Web (CVWeb) for basic mapping, but some, like Assessor-Treasurer appraisers, require ArcGIS Pro for advanced customization. Over the summer, 30 appraisers transitioned from CVWeb to ArcGIS Pro through a three-week training program. One challenge was executing table joins to the tax parcel feature class, a function previously available as a tool in CVWeb. To address this, the TaxParcel Finder Tool was developed in ArcGIS Pro, streamlining parcel selection, exporting data, and adding custom layers. Though designed for appraisers, the tool can be adapted for various Excel-based workflows.
+Pierce County IT-Spatial Services provides employees access to enterprise web mapping applications. Most use CountyView Web (CVWeb) for basic mapping, but some, like Assessor-Treasurer appraisers, require ArcGIS Pro for advanced functionality. Over the summer, 30 appraisers transitioned from CVWeb to ArcGIS Pro through a three-week training program. One challenge was executing table joins to the tax parcel feature class, a function previously available as a tool in CVWeb. To address this, the TaxParcel Finder Tool was developed in ArcGIS Pro, streamlining parcel selection, exporting data, and adding custom layers. Though designed for appraisers, the tool can be adapted for various Excel-based workflows.
 
 # Tax Parcel Finder Tool’s Python Code
 ## Part 1: Set Environment & Check Variables 
@@ -57,7 +57,7 @@ The script, integrated into an ArcGIS Pro toolbox, allows users to modify settin
     print('userInitials: {}'.format(userInitials))
       
 ## Part 2: Join Tax Parcels & Export Features 
-The script joins Excel data to the Parcels layer, selects parcels with matching TaxParcelNumber, and exports them as a feature class in the user's geodatabase. Since Pierce County ArcGIS Pro users are not authorized to publish data online, a GeoJSON output is also created for use in FieldMaps on iPads during assessments. The selection is then cleared for the next operation.
+The script joins Excel data to the Parcels layer, selects parcels with matching TaxParcelNumber, and exports them as a feature class in the user's geodatabase. Since Pierce County ArcGIS Pro users are not authorized to publish data online, a GeoJSON output is also created for use in ArcGIS FieldMaps on iPads during assessments. The selection is then cleared for the next operation.
 
     # Creating new outputs
     try:
