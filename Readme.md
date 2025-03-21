@@ -2,7 +2,7 @@
 Credits: Natalie Ferri and Cort Daniel
 
 # Introduction
-CodePierce County Spatial Services provides employees access to six enterprise mapping applications. Most use CountyView Web(CVWeb) for basic mapping, but some, like Assessor-Treasurer appraisers, require ArcGIS Pro for advanced customization. Over the summer, 30 appraisers transitioned from CVWeb to ArcGIS Pro through a three-week training program. One challenge was executing table joins to the tax parcel feature class, a function previously available as a tool in CVWeb. To address this, the TaxParcel Finder Tool was developed in ArcGIS Pro, streamlining parcel selection, exporting data, and adding custom layers. Though designed for appraisers, the tool can be adapted for various Excel-based workflows.
+Pierce County Spatial Services provides employees access to six enterprise mapping applications. Most use CountyView Web(CVWeb) for basic mapping, but some, like Assessor-Treasurer appraisers, require ArcGIS Pro for advanced customization. Over the summer, 30 appraisers transitioned from CVWeb to ArcGIS Pro through a three-week training program. One challenge was executing table joins to the tax parcel feature class, a function previously available as a tool in CVWeb. To address this, the TaxParcel Finder Tool was developed in ArcGIS Pro, streamlining parcel selection, exporting data, and adding custom layers. Though designed for appraisers, the tool can be adapted for various Excel-based workflows.
 
 # Tax Parcel Finder Tool’s Python Code
 ## Part 1: Set Environment & Check Variables 
