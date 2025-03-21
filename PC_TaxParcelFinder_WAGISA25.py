@@ -1,6 +1,7 @@
 """Pierce County ATR Appraiser Parcel Select Tool
 
-This tool replicates the Import Parcel Table tool from CVWeb.
+This tool replicates the Import Parcel Table tool from CountyView Web.
+
 Steps:
 1. Remove previous join from PARCELS layer 
 2. Schema checker 
@@ -15,7 +16,7 @@ Steps:
 11. Notify user of output locations
 
 Creators: Natalie Ferri, Cort Daniel
-Updated: 10/8/24, to include initials
+Created: 10/8/24
 """
 
 import arcpy, os, time, getpass
@@ -143,7 +144,7 @@ try:
     arcpy.SelectLayerByAttribute_management(newparcels, "NEW_SELECTION", expression)  # Execute selection
     df = aprx.activeView
     df.zoomToAllLayers(True) # Zoom to selection
-    time.sleep(1) # Pause for effect
+    time.sleep(2) # Pause for effect
     arcpy.SelectLayerByAttribute_management(newparcels, "CLEAR_SELECTION")  # Clear previous selection
     
     # Step 11: Notify Users of the output locations
